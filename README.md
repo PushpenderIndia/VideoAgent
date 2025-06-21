@@ -215,6 +215,8 @@ source venv/bin/activate
 adk api_server
 ```
 
+![](/static/imgs/adk_web.png)
+
 #### 🎯 Benefits of ADK Integration
 
 - **Rapid Prototyping**: Test video generation ideas quickly
