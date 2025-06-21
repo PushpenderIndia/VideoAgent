@@ -1,6 +1,6 @@
 # Video Generation Agent System
 
-A multi-agent AI system that automatically generates educational videos using ADK (Agent Development Kit). The system uses 5 specialized agents to create videos from topic to final output.
+A multi-agent AI system that automatically generates educational videos with **intelligent transition effects** using ADK (Agent Development Kit). The system uses 5 specialized agents to create professional videos from topic to final output with dynamic scene transitions.
 
 ## 🎬 Overview
 
@@ -10,7 +10,22 @@ This system creates 2-minute educational videos automatically through a pipeline
 2. **Audio Generation Agent** - Creates voiceovers using ElevenLabs/gTTS  
 3. **Video Illustration Agent** - Finds relevant video clips from Getty Images
 4. **Manim Illustration Agent** - Creates mathematical/graphical animations
-5. **Video Compiler Agent** - Combines everything using MoviePy
+5. **Video Compiler Agent** - Combines everything using MoviePy with **intelligent transition effects**
+
+## ✨ Key Features
+
+### 🎭 Dynamic Transition Effects
+Our AI agent automatically adds professional transition effects between video scenes:
+
+- **Intelligent Selection**: Analyzes scene content to choose appropriate transitions
+- **Content-Aware Matching**: 
+  - Action/movement keywords → zoom transitions
+  - Dramatic/emotional content → fade effects  
+  - Time-related content → quick transitions
+  - Scale/size references → zoom in/out effects
+- **5 Transition Types**: Crossfade, fade to black, zoom in, zoom out, and quick fade
+- **Automatic Application**: No manual intervention required - the AI selects the best transition for each scene pair
+- **Professional Quality**: Creates smooth, engaging transitions that enhance video flow
 
 ## 🚀 Quick Start
 
@@ -114,6 +129,23 @@ Generated videos will be saved in:
 - `static/compiled_videos/` - Final video outputs
 - `static/manim_outputs/` - Mathematical animations
 
+### 🎬 Transition Effects in Action
+
+When you run the system, you'll see logs like:
+```
+🎬 Applying zoom_in transition between scene 0 and 1
+🎬 Applying quick_fade transition between scene 1 and 2
+🎬 Applying fade_to_black transition between scene 2 and 3
+```
+
+The AI automatically:
+1. **Analyzes** each scene's content for keywords
+2. **Selects** the most appropriate transition type
+3. **Applies** professional transition effects
+4. **Logs** the chosen transitions for transparency
+
+**Example:** A scene about "dramatic cellular changes" followed by "then the process begins" would automatically get a `fade_to_black` transition, creating a professional cinematic effect!
+
 ## 🤖 Agent Architecture
 
 ### 1. Video Script Agent
@@ -134,7 +166,10 @@ Generated videos will be saved in:
 
 ### 5. Video Compiler Agent
 - Combines all elements using MoviePy
+- **Intelligently applies dynamic transition effects between scenes**
+- **Analyzes scene content to select appropriate transitions automatically**
 - Adds intro/outro and handles final compilation
+- **Supports 5 professional transition types**: crossfade, fade to black, zoom in/out, quick fade
 
 ## ⚙️ Configuration
 
@@ -144,11 +179,30 @@ The system is designed to work out-of-the-box with minimal configuration. All se
 - **Audio Quality**: 128kbps MP3
 - **Manim Animations**: Medium quality rendering
 - **Output Formats**: MP4 for videos, MP3 for audio
+- **Transition Effects**: Automatically selected based on content analysis
+
+### 🎬 Transition Effects Configuration
+
+The AI agent automatically selects transitions based on content keywords, but you can customize the behavior:
+
+**Content-Based Selection Rules:**
+- **Action Keywords** (`move`, `run`, `travel`, `journey`, etc.) → Zoom transitions
+- **Dramatic Keywords** (`dramatic`, `emotional`, `surprise`, etc.) → Fade effects
+- **Time Keywords** (`then`, `after`, `meanwhile`, etc.) → Quick fade
+- **Scale Keywords** (`big`, `small`, `grow`, `shrink`, etc.) → Zoom in/out
+
+**Available Transition Types:**
+1. `crossfade` - Smooth cross-fade between scenes
+2. `fade_to_black` - Fade out → black screen → fade in  
+3. `zoom_in` - Dynamic zoom in effect at scene end
+4. `zoom_out` - Dynamic zoom out effect at scene end
+5. `quick_fade` - Fast fade transition for dynamic content
 
 If you need to customize these settings, you can modify the values directly in the agent files:
 - Video settings: `agents/video_compiler_agent.py`
 - Audio settings: `agents/audio_generation_agent.py`
 - Manim settings: `agents/manim_illustration_agent.py`
+- **Transition settings**: `agents/video_compiler_agent.py` (keyword lists and transition effects)
 
 ## 🛠️ Troubleshooting
 
@@ -178,6 +232,12 @@ If you need to customize these settings, you can modify the values directly in t
    - Check that all input files exist
    - Verify FFmpeg installation
    - Check file permissions in output directories
+
+6. **Transition effects not working**
+   - Verify MoviePy version is 2.x: `pip show moviepy`
+   - Check console output for transition selection logs
+   - Ensure scene content contains analyzable text
+   - Fallback to crossfade if specific transitions fail
 
 ### Getting Help
 
