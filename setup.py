@@ -114,9 +114,9 @@ def main():
     print("1. Edit .env file with your API keys:")
     print("   - Get Google Gemini API key from: https://makersuite.google.com/app/apikey")
     print("   - Get ElevenLabs API key from: https://elevenlabs.io/ (optional)")
-    print("2. Test the system: python test_system.py")
-    print("3. Generate your first video: python main.py")
-    print("4. Or use orchestrator directly: python video_generation_orchestrator.py 'your topic'")
+    print("2. Test the system: python3 test_system.py")
+    print("3. Generate your first video: python3 main.py")
+    print("4. Or use orchestrator directly: python3 video_generation_orchestrator.py 'your topic'")
     print("\n📖 For more details, see README.md")
     
     return True

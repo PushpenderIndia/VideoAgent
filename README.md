@@ -63,6 +63,8 @@ You'll need to obtain the following API keys:
 - Add to `.env` file: `ELEVEN_LABS_API=your_key_here`
 - If not provided, system falls back to Google Text-to-Speech
 
+> **Note:** The system uses sensible defaults for all other settings (video quality, audio formats, etc.). No additional configuration is required.
+
 ### System Dependencies
 
 Install FFmpeg for video processing:
@@ -134,6 +136,20 @@ Generated videos will be saved in:
 - Combines all elements using MoviePy
 - Adds intro/outro and handles final compilation
 
+## ⚙️ Configuration
+
+The system is designed to work out-of-the-box with minimal configuration. All settings use sensible defaults:
+
+- **Video Quality**: Medium quality (1280x720, 24fps)
+- **Audio Quality**: 128kbps MP3
+- **Manim Animations**: Medium quality rendering
+- **Output Formats**: MP4 for videos, MP3 for audio
+
+If you need to customize these settings, you can modify the values directly in the agent files:
+- Video settings: `agents/video_compiler_agent.py`
+- Audio settings: `agents/audio_generation_agent.py`
+- Manim settings: `agents/manim_illustration_agent.py`
+
 ## 🛠️ Troubleshooting
 
 ### Common Issues
@@ -162,15 +178,6 @@ Generated videos will be saved in:
    - Check that all input files exist
    - Verify FFmpeg installation
    - Check file permissions in output directories
-
-### Debug Mode
-
-Enable debug mode in your `.env` file:
-```bash
-DEBUG_MODE=true
-```
-
-This will provide verbose logging to help identify issues.
 
 ### Getting Help
 
