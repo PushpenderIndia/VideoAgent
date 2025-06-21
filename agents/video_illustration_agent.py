@@ -19,7 +19,7 @@ class VideoIllustrationAgent(LlmAgent):
         """Initialize configuration after parent initialization"""
         api_key = gemini_api_key or os.getenv('GEMINI_API_KEY')
         genai.configure(api_key=api_key)
-        self.__dict__['model'] = genai.GenerativeModel('gemini-pro')
+        self.__dict__['model'] = genai.GenerativeModel('gemini-2.0-flash')
         self.__dict__['scraper'] = cloudscraper.create_scraper()
     
     def generate_search_keywords(self, dialogue: str) -> dict:

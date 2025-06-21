@@ -20,7 +20,7 @@ class ManimIllustrationAgent(LlmAgent):
         """Initialize configuration after parent initialization"""
         api_key = gemini_api_key or os.getenv('GEMINI_API_KEY')
         genai.configure(api_key=api_key)
-        self.__dict__['model'] = genai.GenerativeModel('gemini-pro')
+        self.__dict__['model'] = genai.GenerativeModel('gemini-2.0-flash')
         self.__dict__['output_dir'] = "static/manim_outputs"
         os.makedirs(self.output_dir, exist_ok=True)
     
