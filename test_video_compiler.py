@@ -109,7 +109,19 @@ def create_dummy_audio():
         
         # Create audio clip
         tone = make_tone(duration=3)
-        audio_clip = AudioClip(lambda t: tone[int(t * 22050):int(t * 22050) + 1], duration=3, fps=22050)
+        
+        # Create a proper audio function that returns an array
+        def audio_func(t):
+            if isinstance(t, np.ndarray):
+                # For array input, return array of samples
+                indices = np.clip((t * 22050).astype(int), 0, len(tone) - 1)
+                return tone[indices]
+            else:
+                # For single value input, return single sample
+                index = min(int(t * 22050), len(tone) - 1)
+                return tone[index]
+        
+        audio_clip = AudioClip(audio_func, duration=3, fps=22050)
         
         # Save to file
         os.makedirs("static/audio", exist_ok=True)
@@ -180,6 +192,67 @@ def test_complete_scene():
         print(f"❌ Complete scene test failed: {e}")
         return False
 
+def test_looped_video():
+    """Test creating a looped video of specific duration"""
+    print("\n🧪 Testing looped video creation...")
+    
+    try:
+        from moviepy import VideoFileClip, concatenate_videoclips
+        
+        # Create a short base video clip (2 seconds)
+        background = ColorClip(size=(1920, 1080), color=(100, 50, 150), duration=2)
+        text = TextClip(text="LOOP TEST", font_size=80, color='white').with_duration(2).with_position('center')
+        
+        # Create composite base clip
+        base_clip = CompositeVideoClip([background, text])
+        
+        # Create looped video by repeating the clip
+        target_duration = 10  # 10 seconds
+        base_duration = base_clip.duration
+        num_loops = int(target_duration / base_duration) + 1  # Add one extra to ensure we reach target
+        
+        # Create list of clips to concatenate
+        clips_to_loop = [base_clip] * num_loops
+        
+        # Concatenate clips to create loop
+        looped_clip = concatenate_videoclips(clips_to_loop, method="chain")
+        
+        # Trim to exact target duration
+        if looped_clip.duration > target_duration:
+            looped_clip = looped_clip.subclipped(0, target_duration)
+        
+        # Verify the duration
+        actual_duration = looped_clip.duration
+        print(f"✅ Looped video created - Target: {target_duration}s, Actual: {actual_duration:.2f}s")
+        
+        # Save the looped video
+        os.makedirs("static/videos", exist_ok=True)
+        looped_path = "static/videos/looped_test.mp4"
+        looped_clip.write_videofile(looped_path, fps=24, logger=None)
+        print(f"✅ Looped video saved to: {looped_path}")
+        
+        # Cleanup
+        looped_clip.close()
+        base_clip.close()
+        
+        # Verify the file was created and has reasonable size
+        if os.path.exists(looped_path):
+            file_size = os.path.getsize(looped_path)
+            print(f"✅ Looped video file size: {file_size / 1024:.2f} KB")
+            
+            # Clean up test files
+            os.remove(looped_path)
+            print("✅ Test files cleaned up")
+            
+            return True
+        else:
+            print("❌ Looped video file was not created")
+            return False
+        
+    except Exception as e:
+        print(f"❌ Looped video test failed: {e}")
+        return False
+
 def main():
     """Run all tests"""
     print("🎬 Testing Video Compiler Agent Components")
@@ -191,7 +264,8 @@ def main():
         ("CompositeVideoClip", test_composite_video),
         ("VideoCompilerAgent", test_video_compiler_agent),
         ("Video Download", test_video_download),
-        ("Complete Scene Creation", test_complete_scene)
+        ("Complete Scene Creation", test_complete_scene),
+        ("Looped Video", test_looped_video)
     ]
     
     results = {}

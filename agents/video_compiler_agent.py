@@ -30,6 +30,49 @@ class VideoCompilerAgent(LlmAgent):
             'quick_fade'
         ]
     
+    def _create_looped_video(self, video_clip, target_duration):
+        """
+        Create a looped video from a clip to match target duration
+        
+        Args:
+            video_clip: The video clip to loop
+            target_duration (float): Target duration in seconds
+            
+        Returns:
+            VideoClip: Looped video clip
+        """
+        try:
+            if video_clip.duration >= target_duration:
+                # If video is already long enough, just trim it
+                return video_clip.subclipped(0, target_duration)
+            
+            # Calculate how many loops we need
+            num_loops = int(target_duration / video_clip.duration) + 1
+            
+            # Create list of clips to concatenate
+            clips_to_loop = [video_clip] * num_loops
+            
+            # Concatenate clips to create loop
+            looped_clip = concatenate_videoclips(clips_to_loop, method="chain")
+            
+            # Trim to exact target duration
+            if looped_clip.duration > target_duration:
+                looped_clip = looped_clip.subclipped(0, target_duration)
+            
+            return looped_clip
+            
+        except Exception as e:
+            print(f"⚠️  Error creating looped video: {e}")
+            # Fallback: just return the original clip trimmed or extended with a freeze frame
+            if video_clip.duration >= target_duration:
+                return video_clip.subclipped(0, target_duration)
+            else:
+                # Extend with freeze frame
+                last_frame = video_clip.subclipped(video_clip.duration - 0.1, video_clip.duration)
+                extension_duration = target_duration - video_clip.duration
+                extended_frame = last_frame.with_duration(extension_duration)
+                return concatenate_videoclips([video_clip, extended_frame], method="chain")
+    
     def _select_dynamic_transition(self, prev_scene_data: dict, next_scene_data: dict, transition_index: int) -> str:
         """
         Dynamically select transition effect based on scene content and context
@@ -190,10 +233,7 @@ class VideoCompilerAgent(LlmAgent):
                 video_clip = VideoFileClip(scene_data["manim_video"])
                 
                 # Adjust video duration to match audio
-                if video_clip.duration < audio_duration:
-                    video_clip = video_clip.looped(duration=audio_duration)
-                else:
-                    video_clip = video_clip.subclipped(0, audio_duration)
+                video_clip = self._create_looped_video(video_clip, audio_duration)
                     
             elif scene_data.get("video_url"):
                 # Download and use Getty Images video
@@ -209,10 +249,7 @@ class VideoCompilerAgent(LlmAgent):
                         video_clip = VideoFileClip(download_result["file_path"])
                         
                         # Adjust video duration to match audio
-                        if video_clip.duration < audio_duration:
-                            video_clip = video_clip.looped(duration=audio_duration)
-                        else:
-                            video_clip = video_clip.subclipped(0, audio_duration)
+                        video_clip = self._create_looped_video(video_clip, audio_duration)
                         
                         # Resize to standard dimensions if needed
                         if video_clip.size != (1920, 1080):
