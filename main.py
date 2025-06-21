@@ -31,7 +31,9 @@ def main():
     )
     
     # Example: Generate video about "powerhouse of the cell"
-    topic = "powerhouse of the cell"
+    topic = input("Enter a topic for the video (default value: 'powerhouse of the cell'): ")
+    if not topic:
+        topic = "powerhouse of the cell"
     print(f"🎬 Generating video about: {topic}")
     
     # Generate the video
