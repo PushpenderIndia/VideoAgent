@@ -148,6 +148,11 @@ class VideoCompilerAgent(LlmAgent):
             elif transition_type == 'fade_to_black':
                 # Fade to black transition
                 black_clip = ColorClip(size=clip1.size, color=(0,0,0), duration=duration/2)
+                # Add silent audio to black clip to maintain audio continuity
+                from moviepy.audio.AudioClip import AudioClip
+                silent_audio = AudioClip(lambda t: 0, duration=duration/2, fps=22050)
+                black_clip = black_clip.with_audio(silent_audio)
+                
                 clip1_fade = clip1.with_effects([FadeOut(duration/2)])
                 clip2_fade = clip2.with_effects([FadeIn(duration/2)])
                 return [clip1_fade, black_clip, clip2_fade]
@@ -161,7 +166,7 @@ class VideoCompilerAgent(LlmAgent):
                 clip1_zoomed = clip1_end.resized(lambda t: 1 + 0.3 * (t / zoom_duration))
                 
                 if clip1_start.duration > 0:
-                    clip1_final = concatenate_videoclips([clip1_start, clip1_zoomed])
+                    clip1_final = concatenate_videoclips([clip1_start, clip1_zoomed], method="chain")
                 else:
                     clip1_final = clip1_zoomed
                     
@@ -177,7 +182,7 @@ class VideoCompilerAgent(LlmAgent):
                 clip1_zoomed = clip1_end.resized(lambda t: max(0.7, 1 - 0.3 * (t / zoom_duration)))
                 
                 if clip1_start.duration > 0:
-                    clip1_final = concatenate_videoclips([clip1_start, clip1_zoomed])
+                    clip1_final = concatenate_videoclips([clip1_start, clip1_zoomed], method="chain")
                 else:
                     clip1_final = clip1_zoomed
                     
@@ -560,10 +565,10 @@ class VideoCompilerAgent(LlmAgent):
                         transitioned_clips.append(current_clip)
                 
                 # Concatenate all transitioned clips
-                final_video = concatenate_videoclips(transitioned_clips, method="compose")
+                final_video = concatenate_videoclips(transitioned_clips, method="chain")
             else:
                 # Single clip, no transitions needed
-                final_video = concatenate_videoclips(video_clips, method="compose")
+                final_video = concatenate_videoclips(video_clips, method="chain")
             
             # Set final output path
             final_output = os.path.join(self.output_dir, output_filename)
@@ -650,7 +655,7 @@ class VideoCompilerAgent(LlmAgent):
                 clips.append(outro_final)
             
             # Concatenate all clips
-            final_video = concatenate_videoclips(clips, method="compose")
+            final_video = concatenate_videoclips(clips, method="chain")
             
             # Create output path
             base_name = os.path.splitext(os.path.basename(video_path))[0]
