@@ -188,3 +188,25 @@ If you need to customize these settings, you can modify the values directly in t
 ## 📝 License
 
 This project is open source and available under the MIT License.
+
+## Hackathon Teammate
+<table>
+<tr>
+
+<td align="center">
+    <a href="https://github.com/khusburai28">
+        <kbd><img src="https://avatars3.githubusercontent.com/khusburai28?size=400" width="100px;" alt=""/></kbd><br />
+        <sub><b>Khusbu Rai</b></sub>
+    </a><br />
+</td>
+
+<td align="center">
+    <a href="https://github.com/PushpenderIndia">
+        <kbd><img src="https://avatars3.githubusercontent.com/PushpenderIndia?size=400" width="100px;" alt=""/></kbd><br />
+        <sub><b>Pushpender Singh</b></sub>
+    </a><br />
+</td>
+
+</tr>
+</tr>
+</table>
