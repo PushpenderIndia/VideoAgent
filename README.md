@@ -123,6 +123,121 @@ python3 test_system.py
    python3 demo.py
    ```
 
+### Running ADK Web Interface
+
+The VideoAgent project is integrated with Google's Agent Development Kit (ADK), providing a sophisticated web-based development interface for testing, debugging, and showcasing your video generation agents.
+
+#### 🌟 What is ADK?
+
+The Google Agent Development Kit (ADK) is a powerful framework that provides:
+- **Interactive Web UI** for testing agents
+- **Visual debugging** with function call inspection
+- **Real-time monitoring** and event tracing
+- **Session management** for conversation context
+- **Audio/voice interaction** support
+
+#### 🚀 Quick Setup
+
+1. **Run the setup script:**
+   ```bash
+   python3 setup_adk.py
+   ```
+
+2. **Activate virtual environment and start ADK:**
+   ```bash
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python3 run_adk_web.py
+   ```
+
+3. **Open your browser:**
+   - Navigate to: http://localhost:8000
+   - Select `video_generation_agent` from the dropdown
+   - Start chatting with your agent!
+
+#### 💬 Example Prompts
+
+Try these prompts in the ADK web interface:
+
+```
+Generate a video about "machine learning basics"
+```
+
+```
+Check the system status
+```
+
+```
+List all generated videos
+```
+
+```
+Create a video about "photosynthesis" with filename "biology_lesson.mp4"
+```
+
+#### 🔧 ADK Agent Capabilities
+
+Your ADK-integrated video agent provides three main functions:
+
+**🎬 Video Generation** (`generate_video_from_topic`)
+- Creates complete videos from any topic
+- Handles script generation, audio, illustrations, and compilation
+- Supports custom output filenames
+
+**📊 System Status** (`get_project_status`)
+- Checks API key configuration
+- Verifies directory structure
+- Reports system health
+
+**📁 Video Management** (`list_generated_videos`)
+- Lists all previously generated videos
+- Shows file sizes and creation dates
+- Provides file paths for access
+
+#### 🐛 Debugging Features
+
+The ADK interface provides powerful debugging tools:
+
+- **Events Tab**: Inspect individual function calls and responses
+- **Trace Logs**: Monitor latency and performance metrics
+- **Error Handling**: Clear error messages and troubleshooting
+- **Real-time Feedback**: Watch video generation progress live
+
+#### 🔄 Alternative Interfaces
+
+**Terminal Interface:**
+```bash
+python3 run_adk_terminal.py
+```
+
+**API Server** (for cURL testing):
+```bash
+source venv/bin/activate
+adk api_server
+```
+
+#### 🎯 Benefits of ADK Integration
+
+- **Rapid Prototyping**: Test video generation ideas quickly
+- **Visual Debugging**: See exactly what your agents are doing
+- **Performance Monitoring**: Track function call latency and success rates
+- **Easy Sharing**: Demonstrate capabilities to stakeholders
+- **Production Ready**: Scale to production with multiple deployment options
+
+#### 📋 Troubleshooting
+
+**Agent not found in dropdown:**
+- Ensure you're running from the project root directory
+- Check that `adk_agents/__init__.py` exists
+- Verify the virtual environment is activated
+
+**API key errors:**
+- Update `adk_agents/.env` with your actual API keys
+- Ensure keys are valid and have proper permissions
+
+**Module import errors:**
+- Activate virtual environment: `source venv/bin/activate`
+- Install dependencies: `pip install -r requirements.txt`
+
 ### Output Locations
 
 Generated videos will be saved in:
