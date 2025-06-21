@@ -23,24 +23,25 @@ def setup_environment():
     """Setup environment file"""
     print("🔧 Setting up environment...")
     
-    env_example = ".env.example"
+    env_sample = "env.sample"
     env_file = ".env"
     
     if not os.path.exists(env_file):
-        if os.path.exists(env_example):
-            # Copy example to .env
-            with open(env_example, 'r') as f:
+        if os.path.exists(env_sample):
+            # Copy sample to .env
+            with open(env_sample, 'r') as f:
                 content = f.read()
             
             with open(env_file, 'w') as f:
                 f.write(content)
             
-            print(f"✅ Created {env_file} from {env_example}")
-            print("⚠️  Please edit .env file and add your API keys:")
-            print("   - OPENAI_API_KEY")
-            print("   - ELEVEN_LABS_API")
+            print(f"✅ Created {env_file} from {env_sample}")
+            print("\n🔑 API Keys Required:")
+            print("   - GEMINI_API_KEY (Required) - Get from: https://makersuite.google.com/app/apikey")
+            print("   - ELEVEN_LABS_API (Optional) - Get from: https://elevenlabs.io/")
+            print("\n⚠️  Please edit .env file and replace placeholder values with your actual API keys")
         else:
-            print(f"❌ {env_example} not found")
+            print(f"❌ {env_sample} not found")
             return False
     else:
         print(f"✅ {env_file} already exists")
@@ -110,9 +111,13 @@ def main():
     
     print("\n🎉 Setup completed successfully!")
     print("\nNext steps:")
-    print("1. Edit .env file with your API keys")
-    print("2. Run: python main.py")
-    print("3. Or: python video_generation_orchestrator.py 'your topic'")
+    print("1. Edit .env file with your API keys:")
+    print("   - Get Google Gemini API key from: https://makersuite.google.com/app/apikey")
+    print("   - Get ElevenLabs API key from: https://elevenlabs.io/ (optional)")
+    print("2. Test the system: python test_system.py")
+    print("3. Generate your first video: python main.py")
+    print("4. Or use orchestrator directly: python video_generation_orchestrator.py 'your topic'")
+    print("\n📖 For more details, see README.md")
     
     return True
 
