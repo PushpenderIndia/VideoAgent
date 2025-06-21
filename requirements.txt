@@ -1,0 +1,9 @@
+google-adk
+google-generativeai
+requests
+moviepy
+python-dotenv
+manim
+gtts
+easygoogletranslate
+cloudscraper 
