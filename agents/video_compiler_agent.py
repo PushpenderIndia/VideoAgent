@@ -1,8 +1,11 @@
 from google.adk.agents import LlmAgent
 from moviepy import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ColorClip, concatenate_videoclips
+from moviepy.video.fx import Resize, FadeIn, FadeOut
 import os
 import json
 import requests
+import random
+import numpy as np
 from typing import List, Dict
 
 class VideoCompilerAgent(LlmAgent):
@@ -17,6 +20,146 @@ class VideoCompilerAgent(LlmAgent):
         """Initialize configuration after parent initialization"""
         self.__dict__['output_dir'] = "static/compiled_videos"
         os.makedirs(self.output_dir, exist_ok=True)
+        
+        # Initialize transition effects (simplified for compatibility)
+        self.__dict__['transition_effects'] = [
+            'crossfade',
+            'fade_to_black',
+            'zoom_in',
+            'zoom_out',
+            'quick_fade'
+        ]
+    
+    def _select_dynamic_transition(self, prev_scene_data: dict, next_scene_data: dict, transition_index: int) -> str:
+        """
+        Dynamically select transition effect based on scene content and context
+        
+        Args:
+            prev_scene_data (dict): Previous scene data
+            next_scene_data (dict): Next scene data  
+            transition_index (int): Index of the transition
+            
+        Returns:
+            str: Selected transition effect name
+        """
+        try:
+            # Analyze scene content to choose appropriate transition
+            prev_content = " ".join(prev_scene_data.get("content", [])).lower()
+            next_content = " ".join(next_scene_data.get("content", [])).lower()
+            
+            # Action/movement keywords suggest zoom transitions
+            action_keywords = ['move', 'run', 'walk', 'travel', 'journey', 'go', 'arrive', 'leave', 'fast', 'quick']
+            if any(keyword in prev_content or keyword in next_content for keyword in action_keywords):
+                return random.choice(['zoom_in', 'zoom_out', 'quick_fade'])
+            
+            # Dramatic/emotional keywords suggest fade transitions
+            dramatic_keywords = ['dramatic', 'emotional', 'sad', 'happy', 'surprise', 'shock', 'reveal']
+            if any(keyword in prev_content or keyword in next_content for keyword in dramatic_keywords):
+                return random.choice(['fade_to_black', 'crossfade'])
+            
+            # Time-related keywords suggest quick transitions
+            time_keywords = ['time', 'then', 'next', 'after', 'before', 'meanwhile', 'suddenly']
+            if any(keyword in prev_content or keyword in next_content for keyword in time_keywords):
+                return 'quick_fade'
+            
+            # Scale/size keywords suggest zoom transitions  
+            scale_keywords = ['big', 'small', 'large', 'tiny', 'huge', 'grow', 'shrink', 'expand']
+            if any(keyword in prev_content or keyword in next_content for keyword in scale_keywords):
+                return random.choice(['zoom_in', 'zoom_out'])
+                
+            # Default: select based on transition index for variety
+            if transition_index % 4 == 0:
+                return 'crossfade'
+            elif transition_index % 4 == 1:
+                return 'zoom_in'
+            elif transition_index % 4 == 2:
+                return 'fade_to_black'
+            else:
+                return 'quick_fade'
+                
+        except Exception as e:
+            print(f"⚠️  Error in transition selection: {e}")
+            return 'crossfade'  # Safe fallback
+    
+    def _apply_transition_effect(self, clip1: VideoFileClip, clip2: VideoFileClip, 
+                                transition_type: str, duration: float = 1.0) -> List[VideoFileClip]:
+        """
+        Apply transition effect between two video clips
+        
+        Args:
+            clip1 (VideoFileClip): First video clip
+            clip2 (VideoFileClip): Second video clip
+            transition_type (str): Type of transition effect
+            duration (float): Duration of transition in seconds
+            
+        Returns:
+            List[VideoFileClip]: List of clips with transition applied
+        """
+        try:
+            if transition_type == 'crossfade':
+                # Cross-fade transition
+                clip1_fade = clip1.with_effects([FadeOut(duration)])
+                clip2_fade = clip2.with_effects([FadeIn(duration)])
+                return [clip1_fade, clip2_fade]
+                
+            elif transition_type == 'fade_to_black':
+                # Fade to black transition
+                black_clip = ColorClip(size=clip1.size, color=(0,0,0), duration=duration/2)
+                clip1_fade = clip1.with_effects([FadeOut(duration/2)])
+                clip2_fade = clip2.with_effects([FadeIn(duration/2)])
+                return [clip1_fade, black_clip, clip2_fade]
+                
+            elif transition_type == 'zoom_in':
+                # Zoom in transition - apply zoom to end of first clip
+                zoom_duration = min(duration, clip1.duration)
+                clip1_end = clip1.subclipped(max(0, clip1.duration - zoom_duration), clip1.duration)
+                clip1_start = clip1.subclipped(0, max(0, clip1.duration - zoom_duration))
+                
+                clip1_zoomed = clip1_end.resized(lambda t: 1 + 0.3 * (t / zoom_duration))
+                
+                if clip1_start.duration > 0:
+                    clip1_final = concatenate_videoclips([clip1_start, clip1_zoomed])
+                else:
+                    clip1_final = clip1_zoomed
+                    
+                clip2_normal = clip2.with_effects([FadeIn(duration)])
+                return [clip1_final, clip2_normal]
+                
+            elif transition_type == 'zoom_out':
+                # Zoom out transition - apply zoom to end of first clip 
+                zoom_duration = min(duration, clip1.duration)
+                clip1_end = clip1.subclipped(max(0, clip1.duration - zoom_duration), clip1.duration)
+                clip1_start = clip1.subclipped(0, max(0, clip1.duration - zoom_duration))
+                
+                clip1_zoomed = clip1_end.resized(lambda t: max(0.7, 1 - 0.3 * (t / zoom_duration)))
+                
+                if clip1_start.duration > 0:
+                    clip1_final = concatenate_videoclips([clip1_start, clip1_zoomed])
+                else:
+                    clip1_final = clip1_zoomed
+                    
+                clip2_normal = clip2.with_effects([FadeIn(duration)])
+                return [clip1_final, clip2_normal]
+                
+            elif transition_type == 'quick_fade':
+                # Quick fade transition (shorter duration)
+                quick_duration = duration * 0.5
+                clip1_fade = clip1.with_effects([FadeOut(quick_duration)])
+                clip2_fade = clip2.with_effects([FadeIn(quick_duration)])
+                return [clip1_fade, clip2_fade]
+                
+            else:
+                # Default crossfade
+                clip1_fade = clip1.with_effects([FadeOut(duration)])
+                clip2_fade = clip2.with_effects([FadeIn(duration)]) 
+                return [clip1_fade, clip2_fade]
+                
+        except Exception as e:
+            print(f"⚠️  Error applying transition {transition_type}: {e}")
+            # Fallback to simple crossfade
+            clip1_fade = clip1.with_effects([FadeOut(duration)])
+            clip2_fade = clip2.with_effects([FadeIn(duration)])
+            return [clip1_fade, clip2_fade]
     
     def create_scene_video(self, scene_data: dict, scene_index: int) -> dict:
         """
@@ -307,6 +450,7 @@ class VideoCompilerAgent(LlmAgent):
         try:
             scene_clips = []
             total_duration = 0
+            self._transitions_log = []  # Track transitions used
             
             # Create individual scene videos
             for i, scene_data in enumerate(scenes_data):
@@ -322,14 +466,67 @@ class VideoCompilerAgent(LlmAgent):
                         "message": "Scene creation failed"
                     }
             
-            # Load all scene video clips
+            # Load all scene video clips and apply transitions
             video_clips = []
             for scene_path in scene_clips:
                 clip = VideoFileClip(scene_path)
                 video_clips.append(clip)
             
-            # Concatenate all clips
-            final_video = concatenate_videoclips(video_clips, method="compose")
+            # Apply dynamic transitions between clips
+            if len(video_clips) > 1:
+                transitioned_clips = []
+                
+                # Add first clip as-is
+                transitioned_clips.append(video_clips[0])
+                
+                # Apply transitions between consecutive clips
+                for i in range(1, len(video_clips)):
+                    prev_scene_data = scenes_data[i-1] if i-1 < len(scenes_data) else {}
+                    current_scene_data = scenes_data[i] if i < len(scenes_data) else {}
+                    
+                    # Select dynamic transition
+                    transition_type = self._select_dynamic_transition(
+                        prev_scene_data, current_scene_data, i-1
+                    )
+                    
+                    # Log the transition
+                    self._transitions_log.append({
+                        "from_scene": i-1,
+                        "to_scene": i,
+                        "transition_type": transition_type,
+                        "reason": f"Selected based on content analysis"
+                    })
+                    
+                    print(f"🎬 Applying {transition_type} transition between scene {i-1} and {i}")
+                    
+                    # Apply transition effect
+                    prev_clip = transitioned_clips[-1] if transitioned_clips else video_clips[i-1]
+                    current_clip = video_clips[i]
+                    
+                    # Create transition with 1 second duration
+                    transition_clips = self._apply_transition_effect(
+                        prev_clip, current_clip, transition_type, duration=1.0
+                    )
+                    
+                    # Replace last clip with transitioned version and add current clip
+                    if len(transition_clips) == 2:
+                        # Standard transition (crossfade, slide, etc.)
+                        transitioned_clips[-1] = transition_clips[0]  # Replace previous clip
+                        transitioned_clips.append(transition_clips[1])  # Add current clip
+                    elif len(transition_clips) == 3:
+                        # Fade to black transition
+                        transitioned_clips[-1] = transition_clips[0]  # Replace previous clip
+                        transitioned_clips.append(transition_clips[1])  # Add black clip
+                        transitioned_clips.append(transition_clips[2])  # Add current clip
+                    else:
+                        # Fallback: just add current clip
+                        transitioned_clips.append(current_clip)
+                
+                # Concatenate all transitioned clips
+                final_video = concatenate_videoclips(transitioned_clips, method="compose")
+            else:
+                # Single clip, no transitions needed
+                final_video = concatenate_videoclips(video_clips, method="compose")
             
             # Set final output path
             final_output = os.path.join(self.output_dir, output_filename)
@@ -361,7 +558,8 @@ class VideoCompilerAgent(LlmAgent):
                 "final_video": final_output,
                 "total_duration": total_duration,
                 "total_scenes": len(scenes_data),
-                "message": f"Final video compiled successfully: {final_output}"
+                "transitions_used": getattr(self, '_transitions_log', []),
+                "message": f"Final video compiled successfully with dynamic transitions: {final_output}"
             }
             
         except Exception as e:
