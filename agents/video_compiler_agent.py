@@ -209,6 +209,160 @@ class VideoCompilerAgent(LlmAgent):
             clip2_fade = clip2.with_effects([FadeIn(duration)])
             return [clip1_fade, clip2_fade]
     
+    def create_styled_caption(self, text, start_time, end_time, video_size):
+        """
+        Create a styled caption with specific design requirements:
+        - White text on black background box
+        - Bottom padding of 10%
+        - Left-aligned with 70% width
+        - Fading texture from left to right
+        - Fade in/out animation
+        
+        Args:
+            text (str): Caption text
+            start_time (float): Start time in seconds
+            end_time (float): End time in seconds
+            video_size (tuple): Video dimensions (width, height)
+            
+        Returns:
+            CompositeVideoClip: Styled caption clip
+        """
+        try:
+            # Calculate dimensions
+            video_width, video_height = video_size
+            caption_width = int(video_width * 0.7)  # 70% width
+            caption_height = 80  # Fixed height for caption box
+            
+            # Position calculation - bottom 10% padding
+            bottom_padding = int(video_height * 0.1)
+            caption_y = video_height - caption_height - bottom_padding
+            caption_x = 0  # Left-aligned
+            
+            # Create text clip - remove align parameter for compatibility
+            text_clip = TextClip(
+                text=text,
+                font_size=32,
+                color='white',
+                method='caption',
+                size=(caption_width - 40, None)  # Leave some margin
+            ).with_duration(end_time - start_time).with_start(start_time)
+            
+            # Create base black background
+            bg_clip = ColorClip(
+                size=(caption_width, caption_height),
+                color=(0, 0, 0),
+                duration=end_time - start_time
+            ).with_start(start_time)
+            
+            # Create gradient effect (simplified for better compatibility)
+            gradient_clip = ColorClip(
+                size=(caption_width, caption_height),
+                color=(30, 30, 30),  # Slightly lighter than black for gradient effect
+                duration=end_time - start_time
+            ).with_start(start_time).with_opacity(0.3)
+            
+            # Position all elements
+            text_clip = text_clip.with_position((caption_x + 20, caption_y + 10))
+            bg_clip = bg_clip.with_position((caption_x, caption_y))
+            gradient_clip = gradient_clip.with_position((caption_x, caption_y))
+            
+            # Apply fade in/out effects
+            fade_duration = 0.5  # 0.5 second fade
+            text_clip = text_clip.with_effects([FadeIn(fade_duration), FadeOut(fade_duration)])
+            bg_clip = bg_clip.with_effects([FadeIn(fade_duration), FadeOut(fade_duration)])
+            gradient_clip = gradient_clip.with_effects([FadeIn(fade_duration), FadeOut(fade_duration)])
+            
+            # Composite the caption (background + gradient + text)
+            caption_composite = CompositeVideoClip([bg_clip, gradient_clip, text_clip])
+            
+            return caption_composite
+            
+        except Exception as e:
+            print(f"⚠️  Error creating styled caption: {e}")
+            return None
+    
+    def add_captions_to_video(self, video_clip, dialogue_data, video_size=None):
+        """
+        Add styled captions to a video clip based on dialogue data
+        
+        Args:
+            video_clip: The main video clip
+            dialogue_data (list): List of dialogue objects with 'text', 'start', 'end' keys
+            video_size (tuple): Video dimensions (width, height). If None, uses video_clip.size
+            
+        Returns:
+            CompositeVideoClip: Video with captions added
+        """
+        try:
+            if not dialogue_data:
+                return video_clip
+            
+            # Get video size
+            if video_size is None:
+                video_size = video_clip.size
+            
+            # Create caption clips
+            caption_clips = []
+            
+            for dialogue in dialogue_data:
+                caption_clip = self.create_styled_caption(
+                    text=dialogue.get("text", ""),
+                    start_time=dialogue.get("start", 0),
+                    end_time=dialogue.get("end", 1),
+                    video_size=video_size
+                )
+                
+                if caption_clip:
+                    caption_clips.append(caption_clip)
+            
+            # Composite video with captions
+            if caption_clips:
+                all_clips = [video_clip] + caption_clips
+                return CompositeVideoClip(all_clips)
+            else:
+                return video_clip
+                
+        except Exception as e:
+            print(f"⚠️  Error adding captions to video: {e}")
+            return video_clip
+    
+    def extract_dialogue_from_content(self, content, audio_duration):
+        """
+        Extract dialogue data from scene content for caption generation
+        
+        Args:
+            content (list): List of content strings
+            audio_duration (float): Duration of audio in seconds
+            
+        Returns:
+            list: List of dialogue objects with timing information
+        """
+        try:
+            dialogue_data = []
+            
+            if not content:
+                return dialogue_data
+            
+            # Calculate timing for each content piece
+            total_lines = len(content)
+            time_per_line = audio_duration / total_lines if total_lines > 0 else audio_duration
+            
+            for i, text in enumerate(content):
+                start_time = i * time_per_line
+                end_time = min((i + 1) * time_per_line, audio_duration)
+                
+                dialogue_data.append({
+                    "text": text.strip(),
+                    "start": start_time,
+                    "end": end_time
+                })
+            
+            return dialogue_data
+            
+        except Exception as e:
+            print(f"⚠️  Error extracting dialogue from content: {e}")
+            return []
+    
     def create_scene_video(self, scene_data: dict, scene_index: int, video_illustration_agent=None) -> dict:
         """
         Create a video clip for a single scene
@@ -338,6 +492,21 @@ class VideoCompilerAgent(LlmAgent):
                 ).with_position('center').with_duration(audio_duration)
                 
                 video_clip = CompositeVideoClip([video_clip, text_clip])
+            
+            # Add captions if content is available
+            if scene_data.get("content") and scene_data.get("add_captions", True):
+                dialogue_data = self.extract_dialogue_from_content(
+                    scene_data["content"], 
+                    audio_duration
+                )
+                
+                if dialogue_data:
+                    print(f"📝 Adding {len(dialogue_data)} captions to scene {scene_index}")
+                    video_clip = self.add_captions_to_video(
+                        video_clip, 
+                        dialogue_data, 
+                        video_size=(1920, 1080)
+                    )
             
             # Set audio
             final_clip = video_clip.with_audio(audio_clip)

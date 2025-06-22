@@ -2,6 +2,13 @@
 
 A multi-agent AI system that automatically generates educational videos with **intelligent transition effects** using ADK (Agent Development Kit). The system uses 5 specialized agents to create professional videos from topic to final output with dynamic scene transitions.
 
+## YouTube Demonstration
+
+- Click on this below image for playing video
+
+[![IMAGE_ALT](https://img.youtube.com/vi/YHNuFRlKvBU/0.jpg)](https://youtu.be/YHNuFRlKvBU)
+
+
 ## 🎬 Overview
 
 This system creates 2-minute educational videos automatically through a pipeline of AI agents:

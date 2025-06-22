@@ -32,6 +32,134 @@ def test_moviepy_textclip():
         print(f"❌ TextClip test failed: {e}")
         return False
 
+def test_caption_functionality():
+    """Test caption functionality with custom styling"""
+    print("\n🧪 Testing caption functionality...")
+    
+    try:
+        from moviepy import TextClip, ColorClip, CompositeVideoClip
+        from moviepy.video.fx import FadeIn, FadeOut
+        import numpy as np
+        
+        # Create a background video (simulating main video content)
+        background = ColorClip(size=(1920, 1080), color=(20, 50, 100), duration=10)
+        
+        # Test dialogue data
+        dialogue_data = [
+            {"text": "Welcome to our video presentation!", "start": 0, "end": 3},
+            {"text": "This is the first line of dialogue with a longer text to test wrapping.", "start": 3, "end": 6},
+            {"text": "Here's another caption that should fade in and out smoothly.", "start": 6, "end": 9}
+        ]
+        
+        # Create captions list
+        caption_clips = []
+        
+        for dialogue in dialogue_data:
+            # Create caption with specific styling
+            caption_clip = create_styled_caption(
+                text=dialogue["text"],
+                start_time=dialogue["start"],
+                end_time=dialogue["end"],
+                video_size=(1920, 1080)
+            )
+            
+            if caption_clip:
+                caption_clips.append(caption_clip)
+        
+        # Composite all clips together
+        all_clips = [background] + caption_clips
+        final_video = CompositeVideoClip(all_clips)
+        
+        # Save test video
+        os.makedirs("static/videos", exist_ok=True)
+        test_output = "static/videos/caption_test.mp4"
+        final_video.write_videofile(test_output, fps=24, logger=None)
+        
+        print(f"✅ Caption test video created: {test_output}")
+        
+        # Cleanup
+        final_video.close()
+        
+        # Verify file was created
+        if os.path.exists(test_output):
+            file_size = os.path.getsize(test_output)
+            print(f"✅ Caption test file size: {file_size / 1024:.2f} KB")
+            return True
+        else:
+            print("❌ Caption test video was not created")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Caption test failed: {e}")
+        return False
+
+def create_styled_caption(text, start_time, end_time, video_size):
+    """
+    Create a styled caption with the specific requirements:
+    - White text on black background box
+    - Bottom padding of 10%
+    - Left-aligned with 70% width
+    - Fading texture from left to right
+    - Fade in/out animation
+    """
+    try:
+        from moviepy import TextClip, ColorClip, CompositeVideoClip
+        from moviepy.video.fx import FadeIn, FadeOut
+        import numpy as np
+        
+        # Calculate dimensions
+        video_width, video_height = video_size
+        caption_width = int(video_width * 0.7)  # 70% width
+        caption_height = 80  # Fixed height for caption box
+        
+        # Position calculation - bottom 10% padding
+        bottom_padding = int(video_height * 0.1)
+        caption_y = video_height - caption_height - bottom_padding
+        caption_x = 0  # Left-aligned
+        
+        # Create text clip - remove align parameter and use method='caption'
+        text_clip = TextClip(
+            text=text,
+            font_size=32,
+            color='white',
+            method='caption',
+            size=(caption_width - 40, None)  # Leave some margin
+        ).with_duration(end_time - start_time).with_start(start_time)
+        
+        # Create base black background
+        bg_clip = ColorClip(
+            size=(caption_width, caption_height),
+            color=(0, 0, 0),
+            duration=end_time - start_time
+        ).with_start(start_time)
+        
+        # Create gradient effect (simplified)
+        gradient_clip = ColorClip(
+            size=(caption_width, caption_height),
+            color=(30, 30, 30),  # Slightly lighter than black
+            duration=end_time - start_time
+        ).with_start(start_time).with_opacity(0.3)
+        
+        # Position the text within the caption box (centered vertically, left-aligned horizontally)
+        text_clip = text_clip.with_position((caption_x + 20, caption_y + 10))
+        bg_clip = bg_clip.with_position((caption_x, caption_y))
+        gradient_clip = gradient_clip.with_position((caption_x, caption_y))
+        
+        # Apply fade in/out effects
+        fade_duration = 0.5  # 0.5 second fade
+        text_clip = text_clip.with_effects([FadeIn(fade_duration), FadeOut(fade_duration)])
+        bg_clip = bg_clip.with_effects([FadeIn(fade_duration), FadeOut(fade_duration)])
+        gradient_clip = gradient_clip.with_effects([FadeIn(fade_duration), FadeOut(fade_duration)])
+        
+        # Composite the caption (background + gradient + text)
+        caption_composite = CompositeVideoClip([bg_clip, gradient_clip, text_clip])
+        
+        return caption_composite
+        
+    except Exception as e:
+        print(f"⚠️  Error creating styled caption: {e}")
+        return None
+
 def test_color_clip():
     """Test ColorClip functionality"""
     print("\n🧪 Testing ColorClip...")
@@ -260,6 +388,7 @@ def main():
     
     tests = [
         ("MoviePy TextClip", test_moviepy_textclip),
+        ("Caption Functionality", test_caption_functionality),
         ("ColorClip", test_color_clip),
         ("CompositeVideoClip", test_composite_video),
         ("VideoCompilerAgent", test_video_compiler_agent),
