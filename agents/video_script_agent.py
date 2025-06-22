@@ -41,6 +41,7 @@ Make sure:
 - Content is broken down into digestible lines
 - Total duration should be around 2 minutes when spoken
 - Include 5-7 scenes for good pacing
+- Do not include extra instructions or comments in the script, just the dialogue
 '''
         
         try:

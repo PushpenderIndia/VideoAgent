@@ -83,7 +83,8 @@ class VideoGenerationOrchestrator:
         print("🎥 Compiling final video...")
         compilation_result = self.compiler_agent.compile_final_video(
             processed_scenes, 
-            output_filename
+            output_filename,
+            video_illustration_agent=self.illustration_agent
         )
         
         if not compilation_result["success"]:
@@ -163,18 +164,21 @@ class VideoGenerationOrchestrator:
                 scene_data["illustration_type"] = "manim"
                 scene_data["content_type"] = manim_result["content_type"]
             else:
-                # Find video illustration from Getty Images
-                print(f"🔍 Finding video illustration...")
-                illustration_result = self.illustration_agent.find_illustration_for_dialogue(dialogue)
+                # Find unique video illustration from Getty Images using title and dialogue
+                print(f"🔍 Finding unique video illustration with title priority...")
+                scene_title = scene["title"]
+                illustration_result = self.illustration_agent.find_illustration_for_dialogue(dialogue, scene_index, scene_title)
                 
-                if illustration_result["success"] and illustration_result["best_video"]:
-                    scene_data["video_url"] = illustration_result["best_video"]["video_url"]
-                    scene_data["poster_url"] = illustration_result["best_video"]["poster_url"]
-                    scene_data["keywords"] = illustration_result["keywords"]
+                if illustration_result["success"]:
+                    scene_data["video_url"] = illustration_result["video_url"]
+                    scene_data["poster_url"] = illustration_result["poster_url"]
+                    scene_data["keyword_used"] = illustration_result.get("keyword_used", "")
                     scene_data["illustration_type"] = "getty_video"
+                    print(f"✅ Found unique video for scene {scene_index + 1} using title: '{scene_title}' with keyword: '{scene_data['keyword_used']}'")
                 else:
-                    # No illustration found, will use text overlay
+                    # No unique illustration found, will use text overlay
                     scene_data["illustration_type"] = "text_overlay"
+                    print(f"⚠️  No unique video found for scene {scene_index + 1} with title: '{scene_title}', using text overlay")
             
             return {
                 "success": True,

@@ -209,13 +209,14 @@ class VideoCompilerAgent(LlmAgent):
             clip2_fade = clip2.with_effects([FadeIn(duration)])
             return [clip1_fade, clip2_fade]
     
-    def create_scene_video(self, scene_data: dict, scene_index: int) -> dict:
+    def create_scene_video(self, scene_data: dict, scene_index: int, video_illustration_agent=None) -> dict:
         """
         Create a video clip for a single scene
         
         Args:
             scene_data (dict): Scene data with audio, video/illustration files
             scene_index (int): Index of the scene
+            video_illustration_agent: VideoIllustrationAgent instance for unique video selection
             
         Returns:
             dict: Result with scene video clip path
@@ -264,7 +265,17 @@ class VideoCompilerAgent(LlmAgent):
                         
                     except Exception as e:
                         print(f"⚠️  Error processing downloaded video: {e}")
-                        # Fallback to colored background with title
+                        # Try to get a unique video as fallback
+                        if video_illustration_agent and scene_data.get("content"):
+                            content = " ".join(scene_data.get("content", []))
+                            scene_title = scene_data.get("title", "")
+                            unique_video_result = video_illustration_agent.get_unique_video_for_scene(content, scene_index, scene_title)
+                            if unique_video_result["success"]:
+                                print(f"🔄 Retrying with unique video for scene {scene_index} using title: {scene_title}")
+                                scene_data["video_url"] = unique_video_result["video_url"]
+                                return self.create_scene_video(scene_data, scene_index, video_illustration_agent)
+                        
+                        # Final fallback to colored background with title
                         video_clip = ColorClip(size=(1920, 1080), color=(0, 50, 100), duration=audio_duration)
                         
                         title_text = TextClip(
@@ -276,6 +287,17 @@ class VideoCompilerAgent(LlmAgent):
                         video_clip = CompositeVideoClip([video_clip, title_text])
                 else:
                     print(f"⚠️  Video download failed: {download_result['message']}")
+                    
+                    # Try to get a unique video as fallback
+                    if video_illustration_agent and scene_data.get("content"):
+                        content = " ".join(scene_data.get("content", []))
+                        scene_title = scene_data.get("title", "")
+                        unique_video_result = video_illustration_agent.get_unique_video_for_scene(content, scene_index, scene_title)
+                        if unique_video_result["success"]:
+                            print(f"🔄 Found alternative unique video for scene {scene_index} using title: {scene_title}")
+                            scene_data["video_url"] = unique_video_result["video_url"]
+                            return self.create_scene_video(scene_data, scene_index, video_illustration_agent)
+                    
                     # Fallback to colored background with title
                     video_clip = ColorClip(size=(1920, 1080), color=(0, 50, 100), duration=audio_duration)
                     
@@ -288,6 +310,17 @@ class VideoCompilerAgent(LlmAgent):
                     video_clip = CompositeVideoClip([video_clip, title_text])
                 
             else:
+                # Try to get a unique video using the video illustration agent
+                if video_illustration_agent and scene_data.get("content"):
+                    content = " ".join(scene_data.get("content", []))
+                    scene_title = scene_data.get("title", "")
+                    unique_video_result = video_illustration_agent.get_unique_video_for_scene(content, scene_index, scene_title)
+                    
+                    if unique_video_result["success"]:
+                        print(f"🎯 Found unique video for scene {scene_index} using title-based search: {scene_title}")
+                        scene_data["video_url"] = unique_video_result["video_url"]
+                        return self.create_scene_video(scene_data, scene_index, video_illustration_agent)
+                
                 # Create a simple background with text
                 video_clip = ColorClip(size=(1920, 1080), color=(20, 20, 50), duration=audio_duration)
                 
@@ -478,13 +511,14 @@ class VideoCompilerAgent(LlmAgent):
                 "message": "Failed to download video"
             }
     
-    def compile_final_video(self, scenes_data: list, output_filename: str = "final_video.mp4") -> dict:
+    def compile_final_video(self, scenes_data: list, output_filename: str = "final_video.mp4", video_illustration_agent=None) -> dict:
         """
         Compile all scene videos into final video
         
         Args:
             scenes_data (list): List of scene data dictionaries
             output_filename (str): Name of the final output video
+            video_illustration_agent: VideoIllustrationAgent instance for unique video selection
             
         Returns:
             dict: Result with final video path
@@ -494,9 +528,14 @@ class VideoCompilerAgent(LlmAgent):
             total_duration = 0
             self._transitions_log = []  # Track transitions used
             
+            # Reset used videos if agent is provided
+            if video_illustration_agent:
+                video_illustration_agent.reset_used_videos()
+                print("🔄 Reset video tracker for unique video selection")
+            
             # Create individual scene videos
             for i, scene_data in enumerate(scenes_data):
-                scene_result = self.create_scene_video(scene_data, i)
+                scene_result = self.create_scene_video(scene_data, i, video_illustration_agent)
                 
                 if scene_result["success"]:
                     scene_clips.append(scene_result["scene_video"])
